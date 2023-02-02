@@ -195,7 +195,7 @@ for epoch in range(max_epochs):
                 best_metric = metric
                 best_metric_epoch = epoch + 1
                 torch.save(model.state_dict(), os.path.join(root_dir, "best_metric_model.pth"))
-                print("saved new best metric model")
+                print("saved neww best metric model")
             print(
                 f"current epoch: {epoch + 1} current mean dice: {metric:.4f}"
                 f"\nbest mean dice: {best_metric:.4f} "
