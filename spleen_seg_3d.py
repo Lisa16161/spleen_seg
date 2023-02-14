@@ -28,6 +28,7 @@ import glob
 import argparse
 print_config()
 
+#Use of argparse
 parser = argparse.ArgumentParser(description="Script for pretraining generator networks")
 parser.add_argument("--exp_name", type=str, default='test', help="name of the experiment")
 parser.add_argument("--fold", type=int, default=0, help="fold to use for training and validation")
