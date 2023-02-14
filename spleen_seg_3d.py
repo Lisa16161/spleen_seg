@@ -25,12 +25,22 @@ import tempfile
 import shutil
 import os
 import glob
-
+import argparse
 print_config()
 
+parser = argparse.ArgumentParser(description="Script for pretraining generator networks")
+parser.add_argument("--exp_name", type=str, default='test', help="name of the experiment")
+parser.add_argument("--fold", type=int, default=0, help="fold to use for training and validation")
+parser.add_argument("--log_dir", type=str, default='none', help="path to checkpoints dir")
+parser.add_argument("--batch_size", type=int, default=4, help="batch size used for training")
+parser.add_argument("--max_epochs", type=int, default=50, help="number of epochs used for training")
+parser.add_argument("--learn_rate", type=float, default=0.0002, help="initial learning rate used for training")
+parser.add_argument("--inference_dir", type=str, default='none', help="path to inference dir")
+parser.add_argument("--root_dir", type=str, default='none', help="root of the train data")
+parser.add_argument("--data_dir", type=str, default='none', help="folder of the train data")
 
-data_dir = 'D:\project_data\spleen_dataset\Task09_Spleen_f\Task09_Spleen'
-root_dir = 'D:\project_data\spleen_dataset\Task09_Spleen_f'
+opt = parser.parse_args()
+print(opt)
 
 train_images = sorted(glob.glob(os.path.join(data_dir, "imagesTr", "*.nii.gz")))
 train_labels = sorted(glob.glob(os.path.join(data_dir, "labelsTr", "*.nii.gz")))
@@ -92,32 +102,16 @@ val_transforms = Compose(
     ]
 )
 
-
-check_ds = Dataset(data=val_files, transform=val_transforms)
-check_loader = DataLoader(check_ds, batch_size=1)
-check_data = first(check_loader)
-image, label = (check_data["image"][0][0], check_data["label"][0][0])
-print(f"image shape: {image.shape}, label shape: {label.shape}")
-# plot the slice [:, :, 80]
-plt.figure("check", (12, 6))
-plt.subplot(1, 2, 1)
-plt.title("image")
-plt.imshow(image[:, :, 80], cmap="gray")
-plt.subplot(1, 2, 2)
-plt.title("label")
-plt.imshow(label[:, :, 80])
-plt.show()
-
 train_ds = CacheDataset(data=train_files, transform=train_transforms, cache_rate=1.0, num_workers=4)
 # train_ds = Dataset(data=train_files, transform=train_transforms)
 
 # use batch_size=2 to load images and use RandCropByPosNegLabeld
 # to generate 2 x 4 images for network training
-train_loader = DataLoader(train_ds, batch_size=1, shuffle=True, num_workers=4)
+train_loader = DataLoader(train_ds, batch_size, shuffle=True, num_workers=4)
 
 val_ds = CacheDataset(data=val_files, transform=val_transforms, cache_rate=1.0, num_workers=4)
 # val_ds = Dataset(data=val_files, transform=val_transforms)
-val_loader = DataLoader(val_ds, batch_size=1, num_workers=4)
+val_loader = DataLoader(val_ds, batch_size, num_workers=4)
 
 # standard PyTorch program style: create UNet, DiceLoss and Adam optimizer
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -137,7 +131,6 @@ loss_function = DiceLoss(to_onehot_y=True, softmax=True)
 optimizer = torch.optim.Adam(model.parameters(), 1e-4)
 dice_metric = DiceMetric(include_background=False, reduction="mean")
 
-max_epochs = 600
 val_interval = 2
 best_metric = -1
 best_metric_epoch = -1
