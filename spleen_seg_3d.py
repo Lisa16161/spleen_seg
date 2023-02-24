@@ -12,6 +12,7 @@ from monai.transforms import (
     ScaleIntensityRanged,
     Spacingd,
 )
+from torch.utils.tensorboard import SummaryWriter
 from monai.networks.nets import UNet
 from monai.networks.layers import Norm
 from monai.metrics import DiceMetric
@@ -42,6 +43,13 @@ parser.add_argument("--data_dir", type=str, default='none', help="folder of the 
 
 opt = parser.parse_args()
 print(opt)
+
+data_dir = opt.data_dir
+exp_name = opt.exp_name
+root_dir = opt.root_dir
+batch_size = opt.batch_size
+max_epochs = opt.max_epochs
+log_dir = opt.log_dir
 
 train_images = sorted(glob.glob(os.path.join(data_dir, "imagesTr", "*.nii.gz")))
 train_labels = sorted(glob.glob(os.path.join(data_dir, "labelsTr", "*.nii.gz")))
@@ -140,6 +148,13 @@ metric_values = []
 post_pred = Compose([AsDiscrete(argmax=True, to_onehot=2)])
 post_label = Compose([AsDiscrete(to_onehot=2)])
 
+log_dir = root_dir + "models/" + exp_name + "/"
+
+if not os.path.isdir(log_dir):
+    os.makedirs(log_dir)
+
+writer = SummaryWriter(log_dir=log_dir)
+
 for epoch in range(max_epochs):
     print("-" * 10)
     print(f"epoch {epoch + 1}/{max_epochs}")
@@ -162,6 +177,8 @@ for epoch in range(max_epochs):
     epoch_loss /= step
     epoch_loss_values.append(epoch_loss)
     print(f"epoch {epoch + 1} average loss: {epoch_loss:.4f}")
+    epoch_len = len(train_ds)//train_loader.batch_size
+    writer.add_scalar("Train loss", epoch_loss.item(), epoch_len * epoch + step)
 
     if (epoch + 1) % val_interval == 0:
         model.eval()
@@ -181,6 +198,8 @@ for epoch in range(max_epochs):
 
             # aggregate the final mean dice result
             metric = dice_metric.aggregate().item()
+
+            writer.add_scalar("Val metric", metric, epoch + 1)
             # reset the status for next validation round
             dice_metric.reset()
 
