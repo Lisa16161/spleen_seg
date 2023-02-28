@@ -21,9 +21,9 @@ from monai.inferers import sliding_window_inference
 from monai.data import CacheDataset, DataLoader, Dataset, decollate_batch
 from monai.config import print_config
 import torch
-import matplotlib.pyplot as plt
-import tempfile
-import shutil
+#import matplotlib.pyplot as plt
+#import tempfile
+#import shutil
 import os
 import glob
 import argparse
@@ -45,7 +45,6 @@ opt = parser.parse_args()
 print(opt)
 
 data_dir = opt.data_dir
-exp_name = opt.exp_name
 root_dir = opt.root_dir
 batch_size = opt.batch_size
 max_epochs = opt.max_epochs
