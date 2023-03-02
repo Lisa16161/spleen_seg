@@ -1,4 +1,4 @@
-from monai.utils import first, set_determinism
+from monai.utils import set_determinism
 from monai.transforms import (
     AsDiscrete,
     AsDiscreted,
@@ -159,6 +159,7 @@ for epoch in range(max_epochs):
     print(f"epoch {epoch + 1}/{max_epochs}")
     model.train()
     epoch_loss = 0
+    step = 0
     step = 0
     for batch_data in train_loader:
         step += 1
