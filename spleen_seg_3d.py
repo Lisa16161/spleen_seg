@@ -23,7 +23,7 @@ from monai.config import print_config
 import torch
 #import matplotlib.pyplot as plt
 #import tempfile
-#import shutil
+
 import os
 import glob
 import argparse
