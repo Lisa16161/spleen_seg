@@ -23,7 +23,7 @@ from monai.config import print_config
 import torch
 #import matplotlib.pyplot as plt
 #import tempfile
-
+#import shutil
 import os
 import glob
 import argparse
@@ -49,8 +49,12 @@ root_dir = opt.root_dir
 batch_size = opt.batch_size
 max_epochs = opt.max_epochs
 log_dir = opt.log_dir
+exp_name = opt.exp_name
 
 train_images = sorted(glob.glob(os.path.join(data_dir, "imagesTr", "*.nii.gz")))
+print(train_images)
+print(os.path.join(data_dir, "imagesTr", "*.nii.gz"))
+
 train_labels = sorted(glob.glob(os.path.join(data_dir, "labelsTr", "*.nii.gz")))
 data_dicts = [{"image": image_name, "label": label_name} for image_name, label_name in zip(train_images, train_labels)]
 train_files, val_files = data_dicts[:-9], data_dicts[-9:]
@@ -110,19 +114,18 @@ val_transforms = Compose(
     ]
 )
 
-train_ds = CacheDataset(data=train_files, transform=train_transforms, cache_rate=1.0, num_workers=0)
+train_ds = CacheDataset(data=train_files, transform=train_transforms, cache_rate=1.0)
 # train_ds = Dataset(data=train_files, transform=train_transforms)
 
 # use batch_size=2 to load images and use RandCropByPosNegLabeld
 # to generate 2 x 4 images for network training
-train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True, num_workers=0)
+train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True)
 
-val_ds = CacheDataset(data=val_files, transform=val_transforms, cache_rate=1.0, num_workers=0)
+val_ds = CacheDataset(data=val_files, transform=val_transforms, cache_rate=1.0)
 # val_ds = Dataset(data=val_files, transform=val_transforms)
-val_loader = DataLoader(val_ds, batch_size=batch_size, num_workers=0)
+val_loader = DataLoader(val_ds, batch_size=1)
 
-# standard PyTorch progr
-#am style: create UNet, DiceLoss and Adam optimizer
+# standard PyTorch program style: create UNet, DiceLoss and Adam optimizer
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 model = UNet(
@@ -179,7 +182,7 @@ for epoch in range(max_epochs):
     epoch_loss_values.append(epoch_loss)
     print(f"epoch {epoch + 1} average loss: {epoch_loss:.4f}")
     epoch_len = len(train_ds)//train_loader.batch_size
-    writer.add_scalar("Train loss", epoch_loss.item(), epoch_len * epoch + step)
+    writer.add_scalar("Train loss", epoch_loss, epoch_len * epoch + step)
 
     if (epoch + 1) % val_interval == 0:
         model.eval()
@@ -208,7 +211,7 @@ for epoch in range(max_epochs):
             if metric > best_metric:
                 best_metric = metric
                 best_metric_epoch = epoch + 1
-                torch.save(model.state_dict(), os.path.join(root_dir, "best_metric_model.pth"))
+                torch.save(model.state_dict(), os.path.join(log_dir, "best_metric_model.pth"))
                 print("saved neww best metric model")
             print(
                 f"current epoch: {epoch + 1} current mean dice: {metric:.4f}"
