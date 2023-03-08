@@ -12,7 +12,11 @@ from monai.transforms import (
     ScaleIntensityRanged,
     Spacingd,
     RandAffined,
-
+    Rand3DElasticd,
+    RandGaussianNoised,
+    RandScaleIntensityd,
+    RandGaussianSmoothd,
+    RandAdjustContrastd
 )
 from torch.utils.tensorboard import SummaryWriter
 from monai.networks.nets import UNet
@@ -82,20 +86,55 @@ train_transforms = Compose(
         RandCropByPosNegLabeld(
             keys=["image", "label"],
             label_key="label",
-            spatial_size=(96, 96, 96),
+            # spatial_size=(96, 96, 96),
+            spatial_size=(96, 96, 48),  # changed due to CBCT scan sizes
             pos=1,
             neg=1,
             num_samples=4,
             image_key="image",
             image_threshold=0,
         ),
-         RandAffined(
-             keys=['image', 'label'],
-             mode=('bilinear', 'nearest'),
-             prob=1.0, spatial_size=(96, 96, 96),
-             rotate_range=(0, 0, np.pi/15),
-             scale_range=(0.1, 0.1, 0.1),
-         ),
+        Rand3DElasticd(
+            keys=["image", "label"],
+            sigma_range=(0, 1),
+            magnitude_range=(0, 1),
+            spatial_size=None,
+            prob=0.5,
+            rotate_range=(-math.pi / 36, math.pi / 36),  # -15, 15 / -5, 5
+            shear_range=None,
+            translate_range=None,
+            scale_range=None,
+            mode=("bilinear", "nearest"),
+            padding_mode="zeros",
+            as_tensor_output=False
+        ),
+        RandGaussianNoised(
+            keys=["image"],
+            prob=0.5,
+            mean=0.0,
+            std=0.1,
+            allow_missing_keys=False
+        ),
+        RandScaleIntensityd(
+            keys=["image"],
+            factors=0.05,  # this is 10%, try 5%
+            prob=0.5
+        ),
+        RandGaussianSmoothd(
+            keys=["image"],
+            sigma_x=(0.25, 1.5),
+            sigma_y=(0.25, 1.5),
+            sigma_z=(0.25, 1.5),
+            prob=0.5,
+            approx='erf'
+            # allow_missing_keys=False
+        ),
+        RandAdjustContrastd(
+            keys=["image"],
+            prob=0.5,
+            gamma=(0.9, 1.1)
+            # allow_missing_keys=False
+        ),
     ]
 )
 val_transforms = Compose(
@@ -116,6 +155,23 @@ val_transforms = Compose(
     ]
 )
 
+test_transforms = Compose(
+    [
+        LoadImaged(keys=["image", "label"]),
+        EnsureChannelFirstd(keys=["image", "label"]),
+        ScaleIntensityRanged(
+            keys=["image"],
+            a_min=-57,
+            a_max=164,
+            b_min=0.0,
+            b_max=1.0,
+            clip=True,
+        ),
+        CropForegroundd(keys=["image", "label"], source_key="image"),
+        Orientationd(keys=["image", "label"], axcodes="RAS"),
+        Spacingd(keys=["image", "label"], pixdim=(1.5, 1.5, 2.0), mode=("bilinear", "nearest")),
+    ]
+)
 train_ds = CacheDataset(data=train_files, transform=train_transforms, cache_rate=1.0)
 # train_ds = Dataset(data=train_files, transform=train_transforms)
 
@@ -127,7 +183,6 @@ val_ds = CacheDataset(data=val_files, transform=val_transforms, cache_rate=1.0)
 # val_ds = Dataset(data=val_files, transform=val_transforms)
 val_loader = DataLoader(val_ds, batch_size=1)
 
-# standard PyTorch program style: create UNet, DiceLoss and Adam optimizer
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 model = UNet(
