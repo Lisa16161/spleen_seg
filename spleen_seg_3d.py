@@ -175,7 +175,6 @@ test_transforms = Compose(
 )
 train_ds = CacheDataset(data=train_files, transform=train_transforms, cache_rate=1.0)
 # train_ds = Dataset(data=train_files, transform=train_transforms)
-
 # use batch_size=2 to load images and use RandCropByPosNegLabeld
 # to generate 2 x 4 images for network training
 train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True)
@@ -183,6 +182,12 @@ train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True)
 val_ds = CacheDataset(data=val_files, transform=val_transforms, cache_rate=1.0)
 # val_ds = Dataset(data=val_files, transform=val_transforms)
 val_loader = DataLoader(val_ds, batch_size=1)
+
+test_ds = CacheDataset(data=test_files, transform=test_transforms, cache_rate=1.0)
+# train_ds = Dataset(data=train_files, transform=train_transforms)
+# use batch_size=2 to load images and use RandCropByPosNegLabeld
+# to generate 2 x 4 images for network training
+test_loader = DataLoader(test_ds, batch_size=batch_size, shuffle=True)
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -270,9 +275,55 @@ for epoch in range(max_epochs):
                 best_metric = metric
                 best_metric_epoch = epoch + 1
                 torch.save(model.state_dict(), os.path.join(log_dir, "best_metric_model.pth"))
-                print("saved neww best metric model")
+                print("saved new best metric model")
             print(
                 f"current epoch: {epoch + 1} current mean dice: {metric:.4f}"
                 f"\nbest mean dice: {best_metric:.4f} "
                 f"at epoch: {best_metric_epoch}"
             )
+# Testing loop on test data
+model.eval()
+test_loss, test_acc = 0, 0
+with torch.inference_mode():
+    for batch, (X_test, y_test) in enumerate(test_loader):
+        # Send the data to target device
+        X_test, y_test = X_test.to(device), y_test.to(device)
+        test_pred = model(X_test)
+
+        # 2.Calculate test loss
+        loss = loss_function(test_pred, y_test)
+        test_loss += loss.item()  # to get single integer from previous line
+
+        # 3.Accuracy
+        test_pred_labels = test_pred.argmax(dim=1)
+        test_acc += ((test_pred_labels == y_test).sum().item() / len(test_pred_labels))
+
+    # Divide total test loss by length of train data loader(in epoch loop)
+    test_loss /= len(test_loader)
+
+    # Calculate test accuracy per batch
+    test_acc /= len(test_loader)
+    print(test_loss, test_acc)
+
+# Testing loop on train data
+model.eval()
+train_loss, train_acc = 0, 0
+with torch.inference_mode():
+    for batch, (X_train, y_train) in enumerate(train_loader):
+        # Send the data to target device
+        X_train, y_train = X_train.to(device), y_train.to(device)
+        train_pred = model(X_train)
+
+        # 2.Calculate train loss
+        loss = loss_function(train_pred, y_train)
+        train_loss += loss.item()  # to get single integer from previous line
+
+        # 3.Accuracy
+        train_pred_labels = train_pred.argmax(dim=1)
+        train_acc += ((train_pred_labels == y_train).sum().item() / len(train_pred_labels))
+
+    # Divide total test loss by length of train data loader(in epoch loop)
+    train_loss /= len(train_loader)
+
+    # Calculate test accuracy per batch
+    train_acc /= len(train_loader)
