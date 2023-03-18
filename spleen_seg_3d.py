@@ -57,7 +57,7 @@ batch_size = opt.batch_size
 max_epochs = opt.max_epochs
 log_dir = opt.log_dir
 exp_name = opt.exp_name
-
+inference_dir = opt.inference_dir
 train_images = sorted(glob.glob(os.path.join(data_dir, "imagesTr", "*.nii.gz")))
 print(train_images)
 print(os.path.join(data_dir, "imagesTr", "*.nii.gz"))
