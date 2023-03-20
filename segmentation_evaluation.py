@@ -15,13 +15,18 @@ matplotlib.use('TKAgg')
 
 # Path to where you saved decathlon dataset
 nifti_dir = 'D:\\project_data\\spleen_dataset\\Task09_Spleen_f\\Task09_Spleen\\labelsTr'
-
 # Path to where you saved inference results from the cluster
-inference_dir = "D:\\project_data\\spleen_dataset\\Task09_Spleen_f\\results_train_inference\\spleen_seg_no_augment_epoch_1000"
+directory_res = "D:\\project_data\\spleen_dataset\\Task09_Spleen_f\\results_train_inference"
+inference_dir = directory_res + "\\spleen_seg_no_augment_epoch_1000"
 
 all_cases = []
 test_cases = []
 
+for filename in os.listdir(nifti_dir):
+    if os.path.isfile(os.path.join(nifti_dir, filename)):
+        test_cases.append(filename)
+
+print(test_cases)
 
 full_list = []
 [full_list.append('case_' + case_nr) for case_nr in test_cases]
@@ -31,8 +36,14 @@ metrics = ['Dice', 'JD', 'HD']
 organs = ['Spleen']
 
 print(f'length is:{len(metrics)}')
-# put here names of the experiments to be evaluated
-methods = []
+
+methods = []  # create an empty list to store enumerated files
+
+for filename in os.listdir(inference_dir):
+    if os.path.isfile(os.path.join(inference_dir, filename)):
+        methods.append(filename)
+
+print(f'the list for methods is\n{methods}')
 
 worksheet_names = ['Evaluation_1']
 
@@ -41,10 +52,11 @@ output_file_name = '\\seg_results_spleen_b.xlsx'
 # Put here path to where save the output file
 workbook = xlsxwriter.Workbook('D:\\project_data\\spleen_dataset\\Task09_Spleen_f\\Results_evaluation'+ output_file_name)
 
+print('starting metrics calculation')
 method_number = 0
 for method in methods:
 
-    print(method)
+    print(f'the case we use is\n{method}')
 
     worksheet = workbook.add_worksheet(worksheet_names[method_number])
     method_number += 1
@@ -54,25 +66,23 @@ for method in methods:
     for il in range(0, len(organs)):
         for ill in range(0, len(metrics)):
             worksheet.write(2, 1 + il*3 + ill, organs[il] + '_' + metrics[ill])
-
-    print(full_list)
-
+    print(f'the ground truth data is\n{full_list}')
     global_metrics = [[] for i in range(12)]
 
     # for i in range(0, 1):   # validate dataset
     for i in range(0, len(full_list)):  # val dataset
-        print()
+        print('we will compare to')
         case_nr = full_list[i]
         print(full_list[i])
         worksheet.write(3+i, 0, case_nr)
-        print('test 1')
+
         try:
 
             baseline_im_name = '.nii.gz'
             baseline_im_path = ''
 
             case_name = ''
-            seg_im_path = inference_dir + method + '/' + case_name + '/' + case_name + '_seg.nii.gz'
+            seg_im_path = inference_dir + '\\' + method + '\\' + case_name + '\\' + case_name + '_seg.nii.gz'
 
             seg_im_nii = nib.load(seg_im_path)
             seg_im = np.asarray(seg_im_nii.get_data())
