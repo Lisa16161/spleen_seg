@@ -14,10 +14,10 @@ from surface_distance import compute_average_surface_distance, compute_robust_ha
 matplotlib.use('TKAgg')
 
 # Path to where you saved decathlon dataset
-nifti_dir = 'D:\project_data\spleen_dataset\Task09_Spleen_f\Task09_Spleen\imagesTr'
+nifti_dir = 'D:\\project_data\\spleen_dataset\\Task09_Spleen_f\\Task09_Spleen\\labelsTr'
 
 # Path to where you saved inference results from the cluster
-inference_dir = 'D:\project_data\spleen_dataset\Task09_Spleen_f\results_train_inference\spleen_seg_no_augment_epoch_1000'
+inference_dir = "D:\\project_data\\spleen_dataset\\Task09_Spleen_f\\results_train_inference\\spleen_seg_no_augment_epoch_1000"
 
 all_cases = []
 test_cases = []
@@ -36,10 +36,10 @@ methods = []
 
 worksheet_names = ['Evaluation_1']
 
-output_file_name = '\seg_results_spleen.xlsx'
+output_file_name = '\\seg_results_spleen_b.xlsx'
 
 # Put here path to where save the output file
-workbook = xlsxwriter.Workbook('D:\project_data\spleen_dataset\Task09_Spleen_f\Results_evaluation'+ output_file_name)
+workbook = xlsxwriter.Workbook('D:\\project_data\\spleen_dataset\\Task09_Spleen_f\\Results_evaluation'+ output_file_name)
 
 method_number = 0
 for method in methods:
@@ -65,7 +65,7 @@ for method in methods:
         case_nr = full_list[i]
         print(full_list[i])
         worksheet.write(3+i, 0, case_nr)
-
+        print('test 1')
         try:
 
             baseline_im_name = '.nii.gz'
