@@ -14,40 +14,36 @@ from surface_distance import compute_average_surface_distance, compute_robust_ha
 matplotlib.use('TKAgg')
 
 # Path to where you saved decathlon dataset
-nifti_dir = 'D:\\project_data\\spleen_dataset\\Task09_Spleen_f\\Task09_Spleen\\labelsTr'
+nifti_dir = 'D:\\project_data\\spleen_dataset\\Task09_Spleen_f\\Task09_Spleen\\labelsTr\\'
 # Path to where you saved inference results from the cluster
-directory_res = "D:\\project_data\\spleen_dataset\\Task09_Spleen_f\\results_train_inference"
-inference_dir = directory_res + "\\spleen_seg_no_augment_epoch_1000"
+inference_dir = "D:\\project_data\\spleen_dataset\\Task09_Spleen_f\\results_train_inference"
 
-all_cases = []
-test_cases = []
 
-for filename in os.listdir(nifti_dir):
-    if os.path.isfile(os.path.join(nifti_dir, filename)):
-        test_cases.append(filename)
+all_cases = ["2", "3","6","8","9","10","12","13","14","16","17","18","19","20","21","22","24","25","26","27","28","29","31","32","33","38","40","41","44","45","46","47","49","52","53","56","59","60","61","62","63"]
+test_cases = ["2", "3","6","8","9","10","12","13","14","16","17","18","19","20","21","22","24","25","26","27","28","29","31","32","33","38","40","41","44","45","46","47","49","52","53","56","59","60","61","62","63"]
 
 print(test_cases)
 
 full_list = []
-[full_list.append('case_' + case_nr) for case_nr in test_cases]
+[full_list.append('spleen_' + case_nr) for case_nr in test_cases]
 
+def getLargestCC(segmentation):
+labels = label(segmentation)assert( labels.max() != 0 ) # assume at least 1 CC    
+    largestCC = labels == np.argmax(np.bincount(labels.flat)[1:])+1
+    return largestCC
 
 metrics = ['Dice', 'JD', 'HD']
 organs = ['Spleen']
 
 print(f'length is:{len(metrics)}')
 
-methods = []  # create an empty list to store enumerated files
-
-for filename in os.listdir(inference_dir):
-    if os.path.isfile(os.path.join(inference_dir, filename)):
-        methods.append(filename)
+methods = ["spleen_seg_no_augment_epoch_1000", "spleen_seg_with_augment_epoch_1000"]  # create an empty list to store enumerated files
 
 print(f'the list for methods is\n{methods}')
 
-worksheet_names = ['Evaluation_1']
+worksheet_names = ['Evaluation_no_aug','Evaluation_w_aug']
 
-output_file_name = '\\seg_results_spleen_b.xlsx'
+output_file_name = '\\seg_results_spleen_j.xlsx'
 
 # Put here path to where save the output file
 workbook = xlsxwriter.Workbook('D:\\project_data\\spleen_dataset\\Task09_Spleen_f\\Results_evaluation'+ output_file_name)
@@ -57,7 +53,6 @@ method_number = 0
 for method in methods:
 
     print(f'the case we use is\n{method}')
-
     worksheet = workbook.add_worksheet(worksheet_names[method_number])
     method_number += 1
 
@@ -67,7 +62,7 @@ for method in methods:
         for ill in range(0, len(metrics)):
             worksheet.write(2, 1 + il*3 + ill, organs[il] + '_' + metrics[ill])
     print(f'the ground truth data is\n{full_list}')
-    global_metrics = [[] for i in range(12)]
+    global_metrics = [[] for i in range(3)]
 
     # for i in range(0, 1):   # validate dataset
     for i in range(0, len(full_list)):  # val dataset
@@ -78,10 +73,10 @@ for method in methods:
 
         try:
 
-            baseline_im_name = '.nii.gz'
-            baseline_im_path = ''
+            baseline_im_name = full_list[i] + '.nii.gz'
+            baseline_im_path = nifti_dir + baseline_im_name
 
-            case_name = ''
+            case_name = full_list[i]
             seg_im_path = inference_dir + '\\' + method + '\\' + case_name + '\\' + case_name + '_seg.nii.gz'
 
             seg_im_nii = nib.load(seg_im_path)
@@ -139,12 +134,12 @@ for method in methods:
 
     global_metrics_names = ['Dice_spleen', 'JD_spleen', 'HD_spleen']
 
-    for j in range(0, len(global_metrics)):
-        worksheet.write(3 + len(full_list) + 2, j + 1, 'AVG_' + global_metrics_names[j])
-        if global_metrics[j]:
-            worksheet.write(3 + len(full_list) + 3, j + 1, round(mean(global_metrics[j]), 3))
+    for j in range(len(global_metrics_names)):
+        if j < len(global_metrics):
+            worksheet.write(3 + len(full_list) + 2, j + 1, 'AVG_' + global_metrics_names[j])
+            if global_metrics[j]:
+                worksheet.write(3 + len(full_list) + 3, j + 1, round(mean(global_metrics[j]), 3))
 
 workbook.close()
-
 
 print('Finito')
